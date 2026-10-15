@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block titulo %}Gestor de Productos{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='estilos.css') }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Barra superior de navegación -->
+    <header class="app-header">
+        <div class="header-container">
+            <div class="brand">
+                <a href="{{ url_for('index') }}" class="brand-link">
+                    <div class="brand-icon">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="m7.5 4.27 9 5.15"></path>
+                            <path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"></path>
+                            <path d="m3.3 7 8.7 5 8.7-5"></path>
+                            <path d="M12 22V12"></path>
+                        </svg>
+                    </div>
+                    <div>
+                        <h1 class="brand-title">Gestor de Productos</h1>
+                        <span class="brand-badge">Arquitectura Desacoplada</span>
+                    </div>
+                </a>
+            </div>
+
+            <nav class="nav-actions">
+                <a href="{{ url_for('index') }}" class="nav-link">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect width="7" height="7" x="3" y="3" rx="1"></rect>
+                        <rect width="7" height="7" x="14" y="3" rx="1"></rect>
+                        <rect width="7" height="7" x="14" y="14" rx="1"></rect>
+                        <rect width="7" height="7" x="3" y="14" rx="1"></rect>
+                    </svg>
+                    <span>Inventario</span>
+                </a>
+                <a href="{{ url_for('nuevo_producto') }}" class="btn btn-primary btn-sm">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M5 12h14"></path>
+                        <path d="M12 5v14"></path>
+                    </svg>
+                    <span>Registrar Producto</span>
+                </a>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Contenedor de notificaciones Flash -->
+    <main class="main-content">
+        <div class="content-container">
+            {% with mensajes = get_flashed_messages(with_categories=true) %}
+                {% if mensajes %}
+                    <div class="alerts-wrapper" id="alertsWrapper">
+                        {% for categoria, mensaje in mensajes %}
+                            <div class="alert alert-{{ categoria }}" role="alert">
+                                <div class="alert-icon">
+                                    {% if categoria == 'exito' %}
+                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M20 6 9 17l-5-5"></path>
+                                        </svg>
+                                    {% else %}
+                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <circle cx="12" cy="12" r="10"></circle>
+                                            <line x1="12" y1="8" x2="12" y2="12"></line>
+                                            <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                                        </svg>
+                                    {% endif %}
+                                </div>
+                                <div class="alert-message">{{ mensaje }}</div>
+                                <button type="button" class="alert-close" onclick="this.parentElement.remove();" aria-label="Cerrar">
+                                    &times;
+                                </button>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            {% endwith %}
+
+            {% block contenido %}{% endblock %}
+        </div>
+    </main>
+
+    <!-- Modal de confirmación para eliminación -->
+    <div class="modal-overlay" id="modalEliminar" style="display: none;">
+        <div class="modal-dialog">
+            <div class="modal-header">
+                <div class="modal-icon-danger">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M3 6h18"></path>
+                        <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
+                        <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
+                        <line x1="10" y1="11" x2="10" y2="17"></line>
+                        <line x1="14" y1="11" x2="14" y2="17"></line>
+                    </svg>
+                </div>
+                <div>
+                    <h3 class="modal-title">¿Eliminar producto?</h3>
+                    <p class="modal-subtitle">Esta acción eliminará el producto permanentemente de la base de datos SQLite.</p>
+                </div>
+            </div>
+            <div class="modal-body">
+                <p>Estás a punto de eliminar: <strong id="modalNombreProducto" class="modal-highlight"></strong></p>
+                <p class="modal-code">Código: <span id="modalCodigoProducto"></span></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="cerrarModalEliminar()">Cancelar</button>
+                <form id="formConfirmarEliminar" method="POST" action="">
+                    <button type="submit" class="btn btn-danger">Sí, eliminar producto</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pie de página -->
+    <footer class="app-footer">
+        <div class="footer-container">
+            <p><strong>Gestor de Productos</strong> &mdash; Implementación con Arquitectura Desacoplada (Dominio &bull; Interfaces &bull; Servicios &bull; Infraestructura &bull; Presentación)</p>
+            <p class="footer-tech">Python &bull; Flask &bull; SQLAlchemy &bull; SQLite &bull; Jinja2 &bull; pytest</p>
+        </div>
+    </footer>
+
+    <script src="{{ url_for('static', filename='aplicacion.js') }}"></script>
+</body>
+</html>

@@ -1,0 +1,192 @@
+{% extends "base.html" %}
+
+{% block titulo %}Inventario de Productos &mdash; Gestor de Productos{% endblock %}
+
+{% block contenido %}
+<div class="view-header">
+    <div class="view-titles">
+        <h2 class="page-title">Catálogo de Productos</h2>
+        <p class="page-description">Consulta, busca, actualiza y administra los productos almacenados en la base de datos local SQLite.</p>
+    </div>
+
+    <!-- Indicador de total de productos -->
+    <div class="stats-badge-card">
+        <span class="stats-label">Total Registrados</span>
+        <span class="stats-value" id="contadorProductos">{{ total_productos }}</span>
+    </div>
+</div>
+
+<!-- Barra de herramientas: Búsqueda y Registro -->
+<div class="toolbar-card">
+    <form method="GET" action="{{ url_for('index') }}" class="search-form" id="formBusqueda">
+        <div class="search-input-group">
+            <svg class="search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="11" cy="11" r="8"></circle>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+            <input 
+                type="text" 
+                name="q" 
+                id="inputBusqueda" 
+                value="{{ busqueda }}" 
+                placeholder="Buscar por código o nombre..." 
+                class="search-input"
+                autocomplete="off"
+            >
+            {% if busqueda %}
+                <a href="{{ url_for('index') }}" class="clear-search-btn" title="Limpiar búsqueda">
+                    &times;
+                </a>
+            {% endif %}
+        </div>
+        <button type="submit" class="btn btn-secondary">
+            Buscar
+        </button>
+    </form>
+
+    <div class="toolbar-actions">
+        <a href="{{ url_for('nuevo_producto') }}" class="btn btn-primary">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="12" y1="5" x2="12" y2="19"></line>
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+            <span>Nuevo Producto</span>
+        </a>
+    </div>
+</div>
+
+{% if busqueda %}
+    <div class="search-filter-banner">
+        <span>Resultados para la búsqueda: <strong>"{{ busqueda }}"</strong> ({{ productos|length }} encontrados)</span>
+        <a href="{{ url_for('index') }}" class="link-reset">Ver todos los productos</a>
+    </div>
+{% endif %}
+
+<!-- Tabla de Productos -->
+<div class="table-container">
+    {% if productos and productos|length > 0 %}
+        <div class="table-responsive">
+            <table class="data-table" id="tablaProductos">
+                <thead>
+                    <tr>
+                        <th class="col-codigo">Código</th>
+                        <th class="col-nombre">Nombre y Descripción</th>
+                        <th class="col-precio text-right">Precio</th>
+                        <th class="col-cantidad text-center">Cantidad</th>
+                        <th class="col-fecha">Fecha Registro</th>
+                        <th class="col-acciones text-right">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for p in productos %}
+                        <tr class="table-row" data-codigo="{{ p.codigo|lower }}" data-nombre="{{ p.nombre|lower }}">
+                            <td class="col-codigo">
+                                <span class="badge-code">{{ p.codigo }}</span>
+                            </td>
+                            <td class="col-nombre">
+                                <div class="product-info">
+                                    <strong class="product-name">{{ p.nombre }}</strong>
+                                    {% if p.descripcion %}
+                                        <p class="product-desc">{{ p.descripcion }}</p>
+                                    {% else %}
+                                        <span class="product-desc-empty">Sin descripción</span>
+                                    {% endif %}
+                                </div>
+                            </td>
+                            <td class="col-precio text-right">
+                                <span class="price-value">${{ p.precio|formato_pesos }}</span>
+                            </td>
+                            <td class="col-cantidad text-center">
+                                {% if p.cantidad == 0 %}
+                                    <span class="stock-badge stock-empty" title="Agotado">0 uds</span>
+                                {% elif p.cantidad <= 5 %}
+                                    <span class="stock-badge stock-low" title="Bajo inventario">{{ p.cantidad }} uds</span>
+                                {% else %}
+                                    <span class="stock-badge stock-ok">{{ p.cantidad }} uds</span>
+                                {% endif %}
+                            </td>
+                            <td class="col-fecha">
+                                <span class="date-text">
+                                    {{ p.fecha_registro.strftime('%d/%m/%Y %H:%M') if p.fecha_registro else '-' }}
+                                </span>
+                            </td>
+                            <td class="col-acciones text-right">
+                                <div class="action-buttons-group">
+                                    <a 
+                                        href="{{ url_for('editar_producto', producto_id=p.id) }}" 
+                                        class="btn-icon btn-edit" 
+                                        title="Editar {{ p.nombre }}"
+                                        aria-label="Editar {{ p.nombre }}"
+                                    >
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"></path>
+                                            <path d="m15 5 4 4"></path>
+                                        </svg>
+                                        <span>Editar</span>
+                                    </a>
+                                    <button 
+                                        type="button" 
+                                        class="btn-icon btn-delete" 
+                                        title="Eliminar {{ p.nombre }}"
+                                        aria-label="Eliminar {{ p.nombre }}"
+                                        onclick="abrirModalEliminar('{{ p.id }}', '{{ p.nombre|escape }}', '{{ p.codigo|escape }}')"
+                                    >
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M3 6h18"></path>
+                                            <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
+                                            <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
+                                        </svg>
+                                        <span>Eliminar</span>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <!-- Estado Vacío -->
+        <div class="empty-state">
+            <div class="empty-state-icon">
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <rect width="8" height="18" x="3" y="3" rx="1"></rect>
+                    <path d="M7 8h.01"></path>
+                    <path d="M7 12h.01"></path>
+                    <path d="M7 16h.01"></path>
+                    <path d="M11 8h10"></path>
+                    <path d="M11 12h10"></path>
+                    <path d="M11 16h10"></path>
+                </svg>
+            </div>
+            <h3 class="empty-state-title">
+                {% if busqueda %}
+                    No se encontraron productos coincidentes
+                {% else %}
+                    Aún no hay productos registrados
+                {% endif %}
+            </h3>
+            <p class="empty-state-description">
+                {% if busqueda %}
+                    No hay ningún producto cuyo código o nombre coincida con "{{ busqueda }}".
+                {% else %}
+                    Comienza agregando el primer producto a la base de datos de inventario.
+                {% endif %}
+            </p>
+            <div class="empty-state-actions">
+                {% if busqueda %}
+                    <a href="{{ url_for('index') }}" class="btn btn-secondary">Limpiar filtro</a>
+                {% else %}
+                    <a href="{{ url_for('nuevo_producto') }}" class="btn btn-primary">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="12" y1="5" x2="12" y2="19"></line>
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                        </svg>
+                        <span>Registrar Primer Producto</span>
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

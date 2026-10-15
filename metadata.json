@@ -1,0 +1,5 @@
+{
+  "name": "Gestor de Productos",
+  "description": "Sistema sencillo de gestión de productos con arquitectura desacoplada en Python, Flask y SQLAlchemy.",
+  "requestFramePermissions": []
+}

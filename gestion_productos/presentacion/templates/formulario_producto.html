@@ -1,0 +1,175 @@
+{% extends "base.html" %}
+
+{% block titulo %}
+    {% if modo == 'crear' %}
+        Registrar Producto &mdash; Gestor de Productos
+    {% else %}
+        Editar Producto &mdash; Gestor de Productos
+    {% endif %}
+{% endblock %}
+
+{% block contenido %}
+<div class="form-page-layout">
+    <div class="form-card">
+        <div class="form-header">
+            <div class="form-header-text">
+                <a href="{{ url_for('index') }}" class="back-link">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="m15 18-6-6 6-6"></path>
+                    </svg>
+                    <span>Volver al catálogo</span>
+                </a>
+                <h2 class="form-title">
+                    {% if modo == 'crear' %}
+                        Registrar Nuevo Producto
+                    {% else %}
+                        Modificar Producto
+                    {% endif %}
+                </h2>
+                <p class="form-subtitle">
+                    {% if modo == 'crear' %}
+                        Ingresa los datos para incorporar el producto al inventario. Las validaciones de negocio se aplicarán en el dominio.
+                    {% else %}
+                        Actualiza la información comercial del producto. El código de identificación no puede ser modificado.
+                    {% endif %}
+                </p>
+            </div>
+        </div>
+
+        <form 
+            method="POST" 
+            action="{% if modo == 'crear' %}{{ url_for('nuevo_producto') }}{% else %}{{ url_for('editar_producto', producto_id=producto.id) }}{% endif %}" 
+            class="product-form"
+            novalidate
+            id="formProducto"
+        >
+            <div class="form-grid">
+                <!-- Código -->
+                <div class="form-group form-col-12 form-col-md-6">
+                    <label for="codigo" class="form-label">
+                        Código Único <span class="required-asterisk">*</span>
+                    </label>
+                    <div class="input-wrapper">
+                        <input 
+                            type="text" 
+                            id="codigo" 
+                            name="codigo" 
+                            value="{{ producto.codigo or '' }}" 
+                            class="form-input {% if modo == 'editar' %}input-readonly{% endif %}"
+                            placeholder="Ej. PROD-001" 
+                            required 
+                            {% if modo == 'editar' %}readonly tabindex="-1"{% endif %}
+                            autocomplete="off"
+                        >
+                    </div>
+                    {% if modo == 'editar' %}
+                        <span class="form-help">El código es el identificador único del negocio y no es editable.</span>
+                    {% else %}
+                        <span class="form-help">Identificador alfanumérico único para el producto (no admite duplicados).</span>
+                    {% endif %}
+                </div>
+
+                <!-- Nombre -->
+                <div class="form-group form-col-12 form-col-md-6">
+                    <label for="nombre" class="form-label">
+                        Nombre del Producto <span class="required-asterisk">*</span>
+                    </label>
+                    <div class="input-wrapper">
+                        <input 
+                            type="text" 
+                            id="nombre" 
+                            name="nombre" 
+                            value="{{ producto.nombre or '' }}" 
+                            class="form-input"
+                            placeholder="Ej. Monitor Curvo 27 pulgadas" 
+                            required 
+                            autocomplete="off"
+                        >
+                    </div>
+                    <span class="form-help">Nombre comercial representativo del artículo.</span>
+                </div>
+
+                <!-- Precio -->
+                <div class="form-group form-col-12 form-col-md-6">
+                    <label for="precio" class="form-label">
+                        Precio Unitario ($) <span class="required-asterisk">*</span>
+                    </label>
+                    <div class="input-wrapper price-wrapper">
+                        <span class="input-prefix">$</span>
+                        <input 
+                            type="text" 
+                            id="precio" 
+                            name="precio" 
+                            value="{{ producto.precio|default(none, true)|formato_pesos }}" 
+                            class="form-input input-with-prefix"
+                            placeholder="1.000.000" 
+                            inputmode="decimal"
+                            required
+                        >
+                    </div>
+                    <span class="form-help">Usa puntos para miles. Ejemplo: 1.000.000.</span>
+                </div>
+
+                <!-- Cantidad disponible -->
+                <div class="form-group form-col-12 form-col-md-6">
+                    <label for="cantidad" class="form-label">
+                        Cantidad Disponible (Stock) <span class="required-asterisk">*</span>
+                    </label>
+                    <div class="input-wrapper">
+                        <input 
+                            type="number" 
+                            id="cantidad" 
+                            name="cantidad" 
+                            value="{{ producto.cantidad if producto.cantidad is not none else '' }}" 
+                            class="form-input"
+                            placeholder="0" 
+                            step="1" 
+                            min="0" 
+                            required
+                        >
+                    </div>
+                    <span class="form-help">Número entero mayor o igual a cero.</span>
+                </div>
+
+                <!-- Descripción opcional -->
+                <div class="form-group form-col-12">
+                    <label for="descripcion" class="form-label">
+                        Descripción <span class="optional-tag">(Opcional)</span>
+                    </label>
+                    <div class="input-wrapper">
+                        <textarea 
+                            id="descripcion" 
+                            name="descripcion" 
+                            rows="4" 
+                            class="form-textarea"
+                            placeholder="Detalles sobre especificaciones, modelo, características técnicas o notas del producto..."
+                        >{{ producto.descripcion or '' }}</textarea>
+                    </div>
+                    <span class="form-help">Información adicional para detallar el producto.</span>
+                </div>
+            </div>
+
+            <!-- Botones de Acción -->
+            <div class="form-actions">
+                <a href="{{ url_for('index') }}" class="btn btn-secondary">
+                    Cancelar
+                </a>
+                <button type="submit" class="btn btn-primary">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                        <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                        <polyline points="7 3 7 8 15 8"></polyline>
+                    </svg>
+                    <span>
+                        {% if modo == 'crear' %}
+                            Guardar Producto
+                        {% else %}
+                            Actualizar Cambios
+                        {% endif %}
+                    </span>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
