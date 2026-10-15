@@ -26,47 +26,6 @@ from gestion_productos.aplicacion.servicio_productos import ServicioProductos
 from gestion_productos.presentacion.rutas import crear_app
 
 
-def poblar_datos_iniciales(servicio: ServicioProductos):
-    """
-    Puebla algunos productos de demostración si la base de datos está vacía.
-    Permite probar inmediatamente la aplicación sin configuraciones previas.
-    """
-    if servicio.obtener_total_productos() == 0:
-        productos_demo = [
-            {
-                "codigo": "LAP-001",
-                "nombre": "Laptop Ultrabook 14\"",
-                "descripcion": "Procesador Intel Core i7, 16GB RAM, 512GB SSD NVMe.",
-                "precio": 899.99,
-                "cantidad": 12,
-            },
-            {
-                "codigo": "MOU-002",
-                "nombre": "Mouse Inalámbrico Ergonómico",
-                "descripcion": "Sensor óptico 4000 DPI con batería recargable y conexión Bluetooth.",
-                "precio": 29.50,
-                "cantidad": 45,
-            },
-            {
-                "codigo": "TEC-003",
-                "nombre": "Teclado Mecánico RGB",
-                "descripcion": "Switches mecánicos táctiles, retroiluminación configurable por tecla.",
-                "precio": 74.00,
-                "cantidad": 18,
-            },
-            {
-                "codigo": "MON-004",
-                "nombre": "Monitor Curvo 27\" QHD",
-                "descripcion": "Resolución 2560x1440, tasa de refresco 144Hz, panel IPS.",
-                "precio": 249.00,
-                "cantidad": 4,
-            },
-        ]
-        for p in productos_demo:
-            servicio.registrar_producto(**p)
-        print("-> Base de datos inicializada con productos de prueba.")
-
-
 def construir_aplicacion(db_url: str = None):
     """
     Ensamblador de dependencias (Dependency Injection Container / Composition Root).
@@ -82,9 +41,6 @@ def construir_aplicacion(db_url: str = None):
 
     repositorio = RepositorioProductosSQLAlchemy(session)
     servicio = ServicioProductos(repositorio)
-
-    # Poblar si está vacía
-    poblar_datos_iniciales(servicio)
 
     app = crear_app(servicio_productos=servicio)
     return app

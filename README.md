@@ -99,7 +99,7 @@ Abre tu navegador en:
 http://localhost:5000
 ```
 
-> **Nota:** La base de datos SQLite (`productos.db`) y sus tablas se crearán automáticamente al iniciar la aplicación. Además, se poblarán datos de ejemplo si la base de datos está vacía.
+> **Nota:** La base de datos SQLite (`productos.db`) y sus tablas se crearán automáticamente al iniciar la aplicación. El inventario comienza vacío y se llena únicamente con los productos registrados desde la aplicación.
 
 ---
 
