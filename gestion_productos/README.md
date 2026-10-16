@@ -39,7 +39,7 @@ La aplicación está organizada en capas con una dirección estricta de dependen
   - Eliminación con validación de existencia.
   - Inyección de dependencias: solo conoce la interfaz abstracta `RepositorioProductos`, desacoplándose del motor de persistencia.
 - **`interfaces/servicios_inventario.py`**: Puerto de entrada que define tres contratos adicionales:
-  - `producto_tiene_stock(producto_id) -> bool`: recibe un parámetro y retorna un booleano.
+  - `producto_tiene_stock(cantidad) -> bool`: recibe la cantidad y retorna un booleano.
   - `validar_stock_producto(producto_id) -> None`: recibe un parámetro y finaliza sin salida cuando es válido; lanza `ProductoSinStockError` cuando no hay unidades.
   - `generar_resumen_inventario() -> str`: no recibe parámetros y retorna un resumen textual.
 

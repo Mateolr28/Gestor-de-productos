@@ -129,12 +129,11 @@ class ServicioProductos(ServiciosInventario):
         self.obtener_producto_por_id(producto_id)
         return self.repositorio.eliminar(producto_id)
 
-    def producto_tiene_stock(self, producto_id: int) -> bool:
+    def producto_tiene_stock(self, cantidad: int) -> bool:
         """
-        Caso de uso: comprobar si un producto tiene unidades disponibles.
+        Caso de uso: comprobar si una cantidad tiene unidades disponibles.
         """
-        producto = self.obtener_producto_por_id(producto_id)
-        return producto.cantidad > 0
+        return cantidad > 0
 
     def validar_stock_producto(self, producto_id: int) -> None:
         """

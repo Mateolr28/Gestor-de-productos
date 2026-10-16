@@ -10,8 +10,8 @@ class ServiciosInventario(ABC):
     """
 
     @abstractmethod
-    def producto_tiene_stock(self, producto_id: int) -> bool:
-        """Indica si el producto existe y tiene al menos una unidad."""
+    def producto_tiene_stock(self, cantidad: int) -> bool:
+        """Indica si una cantidad representa unidades disponibles."""
         pass
 
     @abstractmethod

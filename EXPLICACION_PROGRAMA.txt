@@ -1,0 +1,541 @@
+DOCUMENTACION COMPLETA - GESTOR DE PRODUCTOS
+=============================================
+
+1. DESCRIPCION GENERAL
+-----------------------
+
+Gestor de Productos es una aplicacion web local para administrar un inventario
+de productos. Permite:
+
+- Consultar todos los productos registrados.
+- Buscar productos por codigo o por nombre.
+- Registrar productos nuevos.
+- Editar el nombre, la descripcion, el precio y la cantidad de un producto.
+- Eliminar productos despues de una confirmacion.
+- Mostrar mensajes de exito y de error al usuario.
+- Guardar la informacion de forma permanente en una base de datos SQLite.
+
+El programa esta desarrollado en Python y utiliza:
+
+- Flask: servidor web y manejo de rutas.
+- Jinja2: plantillas HTML dinamicas incluidas en Flask.
+- SQLAlchemy: comunicacion con la base de datos mediante ORM.
+- SQLite: base de datos local en un archivo.
+- JavaScript vanilla: interacciones del navegador.
+- pytest: pruebas automaticas.
+
+La aplicacion se encuentra principalmente dentro de la carpeta
+gestion_productos/. El archivo run.py ubicado en la raiz es un punto de
+entrada de conveniencia que llama al archivo gestion_productos/run.py.
+
+
+2. ARQUITECTURA DEL PROGRAMA
+----------------------------
+
+El proyecto utiliza una arquitectura desacoplada organizada en capas. Cada
+capas tiene una responsabilidad concreta y las dependencias apuntan hacia el
+dominio:
+
+    Presentacion (Flask, HTML, CSS, JavaScript)
+                       |
+                       v
+    Aplicacion (casos de uso y reglas de coordinacion)
+                       |
+                       v
+    Dominio (entidad Producto, contratos y excepciones)
+                       ^
+                       |
+    Infraestructura (SQLAlchemy, SQLite y mapeo de datos)
+
+La ventaja de esta estructura es que las reglas principales del negocio no
+dependen de Flask ni de SQLAlchemy. Por ejemplo, el servicio puede probarse
+con un repositorio en memoria sin abrir una base de datos.
+
+
+3. ESTRUCTURA DE CARPETAS Y ARCHIVOS
+------------------------------------
+
+gestion_productos/
+|
+|-- run.py
+|-- requirements.txt
+|-- productos.db
+|
+|-- dominio/
+|   |-- producto.py
+|   |-- excepciones.py
+|   `-- interfaces/
+|       `-- repositorio_productos.py
+|
+|-- aplicacion/
+|   `-- servicio_productos.py
+|
+|-- infraestructura/
+|   |-- base_datos.py
+|   |-- modelo_producto.py
+|   |-- mapper_producto.py
+|   `-- repositorio_productos_sqlalchemy.py
+|
+|-- presentacion/
+|   |-- rutas.py
+|   |-- templates/
+|   |   |-- base.html
+|   |   |-- productos.html
+|   |   `-- formulario_producto.html
+|   `-- static/
+|       |-- estilos.css
+|       `-- aplicacion.js
+|
+`-- tests/
+    `-- test_productos.py
+
+Descripcion de los archivos principales:
+
+- run.py:
+  Ensambla la aplicacion. Crea el motor de base de datos, inicializa las
+  tablas, crea la sesion, conecta el repositorio con el servicio y conecta el
+  servicio con Flask. Tambien inicia el servidor.
+
+- dominio/producto.py:
+  Define la entidad de negocio Producto. Sus datos son codigo, nombre, precio,
+  cantidad, descripcion, id y fecha_registro. Ejecuta las validaciones cada vez
+  que se crea o actualiza un producto.
+
+- dominio/excepciones.py:
+  Define los errores propios del negocio:
+  ErrorValidacionProducto, ProductoNoEncontradoError y
+  CodigoProductoDuplicadoError.
+
+- dominio/interfaces/repositorio_productos.py:
+  Define el contrato abstracto que cualquier repositorio de productos debe
+  cumplir: guardar, buscar_por_id, buscar_por_codigo, listar_todos, actualizar
+  y eliminar.
+
+- aplicacion/servicio_productos.py:
+  Contiene los casos de uso. Coordina las operaciones y utiliza solamente la
+  interfaz RepositorioProductos, no una tecnologia concreta de persistencia.
+
+- infraestructura/base_datos.py:
+  Configura el motor SQLAlchemy, crea sesiones y crea las tablas que no
+  existan.
+
+- infraestructura/modelo_producto.py:
+  Define el modelo ORM ProductoORM y la tabla SQL productos.
+
+- infraestructura/mapper_producto.py:
+  Convierte entidades Producto del dominio en registros ProductoORM, y hace la
+  conversion inversa. Esto implementa el patron Data Mapper.
+
+- infraestructura/repositorio_productos_sqlalchemy.py:
+  Implementa el contrato del repositorio usando SQLAlchemy y una sesion de
+  base de datos.
+
+- presentacion/rutas.py:
+  Define las rutas HTTP, recibe formularios, convierte datos, llama al
+  servicio y renderiza las plantillas.
+
+- presentacion/templates/:
+  Contiene las paginas HTML que ve el usuario.
+
+- presentacion/static/aplicacion.js:
+  Contiene interacciones del navegador: busqueda instantanea, modal de
+  confirmacion, formato de precios y cierre automatico de alertas.
+
+- tests/test_productos.py:
+  Contiene pruebas del dominio, del servicio, de la persistencia y de la
+  interfaz web.
+
+
+4. INICIO DE LA APLICACION
+--------------------------
+
+La forma recomendada de iniciar el programa desde la raiz del proyecto es:
+
+    python run.py
+
+Tambien se puede indicar el puerto:
+
+    python run.py --port 5000
+
+Opciones disponibles:
+
+- --port:
+  Puerto del servidor. Por defecto es 5000. Tambien puede configurarse con la
+  variable de entorno PORT.
+
+- --host:
+  Direccion de escucha. Por defecto es 0.0.0.0, por lo que Flask escucha en
+  todas las interfaces de red disponibles.
+
+- --debug:
+  Activa el modo debug de Flask.
+
+Despues de iniciar el servidor se puede abrir:
+
+    http://localhost:5000
+
+Durante el inicio, construir_aplicacion() realiza este flujo:
+
+1. obtener_motor() crea el motor SQLAlchemy.
+2. inicializar_base_datos() ejecuta Base.metadata.create_all() y crea la
+   tabla si aun no existe.
+3. crear_fabrica_sesiones() prepara sesiones asociadas al motor.
+4. Se crea RepositorioProductosSQLAlchemy.
+5. Se crea ServicioProductos y se le inyecta el repositorio.
+6. crear_app() recibe el servicio y configura las rutas Flask.
+7. app.run() levanta el servidor web.
+
+
+5. UBICACION DE LA BASE DE DATOS
+--------------------------------
+
+La base de datos principal es un archivo SQLite llamado:
+
+    C:\Users\Usuario\Documents\universidad\clase 1\gestor-de-productos\gestion_productos\productos.db
+
+Esta es la ubicacion del archivo existente en este proyecto.
+
+El valor predeterminado se construye en infraestructura/base_datos.py. Como
+base_dir se obtiene la carpeta gestion_productos y se crea la URL:
+
+    sqlite:///C:\...\gestor-de-productos\gestion_productos\productos.db
+
+SQLite no utiliza un servidor separado: toda la informacion esta dentro del
+archivo productos.db. Por eso:
+
+- El archivo puede copiarse como respaldo.
+- Si se elimina, la aplicacion puede crear un archivo nuevo al iniciar.
+- Los datos se conservan aunque se detenga el servidor.
+- El archivo no debe editarse manualmente mientras la aplicacion este usando
+  la base de datos.
+
+La aplicacion crea las tablas automaticamente, pero no inserta productos
+automaticamente. El inventario se llena mediante el formulario web.
+
+La funcion obtener_motor() tambien lee la variable de entorno DATABASE_PATH.
+Sin embargo, en la implementacion actual, los valores relativos se sustituyen
+por el nombre predeterminado productos.db y no por el nombre personalizado
+recibido. Por lo tanto, para garantizar que se use la base predeterminada se
+debe dejar DATABASE_PATH sin configurar. La funcion tambien acepta directamente
+una URL SQLAlchemy cuando construir_aplicacion(db_url) recibe un valor como
+sqlite:///ruta/base.db. Las pruebas utilizan sqlite:///:memory: para crear una
+base temporal en memoria.
+
+
+6. TABLA Y CAMPOS DE LA BASE DE DATOS
+-------------------------------------
+
+La tabla se llama:
+
+    productos
+
+Sus columnas son:
+
+- id:
+  Integer, clave primaria y autoincremental. Identifica cada registro.
+
+- codigo:
+  String de hasta 50 caracteres, obligatorio, unico e indexado. Es el
+  identificador comercial del producto y no se puede repetir.
+
+- nombre:
+  String de hasta 150 caracteres, obligatorio.
+
+- descripcion:
+  Texto opcional. Si no se proporciona, se guarda como texto vacio.
+
+- precio:
+  Numero de tipo Float, obligatorio. No puede ser negativo.
+
+- cantidad:
+  Numero entero, obligatorio. Representa el stock y debe ser mayor o igual a
+  cero.
+
+- fecha_registro:
+  Fecha y hora de registro. Se asigna automaticamente usando UTC cuando se
+  crea el producto.
+
+Al listar productos, el repositorio los ordena por fecha_registro descendente
+y, en caso de empate, por id descendente. Por eso los registros mas recientes
+aparecen primero.
+
+
+7. REGLAS DE VALIDACION DEL DOMINIO
+------------------------------------
+
+La clase Producto valida inmediatamente sus datos al construirse:
+
+- El codigo es obligatorio.
+- El codigo se limpia con strip(), eliminando espacios al inicio y al final.
+- El nombre es obligatorio.
+- El nombre tambien se limpia con strip().
+- El precio debe poder convertirse a numero.
+- El precio no puede ser menor que cero.
+- La cantidad debe ser un numero entero.
+- La cantidad no puede ser menor que cero.
+- La descripcion es opcional y se guarda como cadena vacia cuando no existe.
+
+El codigo funciona como identidad de negocio. Al editar un producto solo se
+pueden modificar nombre, descripcion, precio y cantidad. El codigo queda
+bloqueado tanto en la interfaz como en el metodo actualizar().
+
+Ademas de la validacion de la entidad, el servicio verifica antes de registrar
+un producto que no exista otro con el mismo codigo. Si existe, lanza
+CodigoProductoDuplicadoError.
+
+
+8. FUNCIONAMIENTO DE LA CAPA DE APLICACION
+------------------------------------------
+
+ServicioProductos recibe un objeto que implemente RepositorioProductos. Esta
+es una inyeccion de dependencias: el servicio no conoce si los datos se
+guardan en SQLite, memoria, PostgreSQL u otra tecnologia.
+
+Casos de uso:
+
+- registrar_producto():
+  Limpia el codigo, verifica que no este repetido, crea una entidad Producto,
+  ejecuta sus validaciones y solicita al repositorio que la guarde.
+
+- consultar_productos():
+  Obtiene todos los productos desde el repositorio.
+
+- buscar_productos(termino):
+  Si el termino esta vacio, retorna todos los productos. Si tiene contenido,
+  compara el texto ignorando mayusculas y minusculas contra el codigo y el
+  nombre.
+
+- obtener_producto_por_id():
+  Busca por id. Si no existe, lanza ProductoNoEncontradoError.
+
+- obtener_total_productos():
+  Cuenta los productos almacenados.
+
+- actualizar_producto():
+  Comprueba que exista el producto, actualiza sus campos permitidos, vuelve a
+  validar la entidad y guarda el resultado.
+
+- eliminar_producto():
+  Comprueba primero la existencia y despues solicita al repositorio eliminar
+  el registro.
+
+
+9. RUTAS HTTP Y FLUJO DE LA INTERFAZ
+------------------------------------
+
+GET /
+
+- Muestra el catalogo.
+- Lee el parametro opcional q de la URL.
+- Sin q, muestra todos los productos.
+- Con q, busca por codigo o nombre.
+- Muestra el total general de productos registrados.
+
+Ejemplo:
+
+    http://localhost:5000/?q=teclado
+
+GET /productos/nuevo
+
+- Muestra el formulario vacio para registrar un producto.
+
+POST /productos/nuevo
+
+- Recibe codigo, nombre, descripcion, precio y cantidad.
+- Convierte el precio al formato numerico interno.
+- Convierte cantidad a entero.
+- Llama a registrar_producto().
+- Si todo es correcto, guarda en la base de datos y redirige al catalogo.
+- Si hay un error, vuelve a mostrar el formulario y conserva los datos
+  escritos, junto con un mensaje explicativo.
+
+GET /productos/<producto_id>/editar
+
+- Busca el producto indicado por su id.
+- Muestra el formulario con sus datos.
+- El codigo aparece como solo lectura.
+- Si el id no existe, vuelve al catalogo con un error.
+
+POST /productos/<producto_id>/editar
+
+- Recibe los nuevos valores editables.
+- Convierte precio y cantidad.
+- Llama a actualizar_producto().
+- Si funciona, guarda los cambios y vuelve al catalogo.
+
+POST /productos/<producto_id>/eliminar
+
+- Elimina el producto indicado.
+- Solo se permite mediante POST.
+- Antes de enviar el POST, el navegador muestra un modal de confirmacion.
+- Si funciona, vuelve al catalogo con un mensaje de exito.
+
+Errores generales:
+
+- Un error 404 se transforma en un mensaje y redireccion al catalogo.
+- Un error 500 se transforma en un mensaje generico y redireccion al
+  catalogo.
+
+
+10. MANEJO DE PRECIOS
+---------------------
+
+La interfaz esta pensada para formato colombiano:
+
+- Punto como separador de miles: 1.000.000
+- Coma como separador decimal: 1.000.000,50
+
+parsear_precio() convierte esos textos a float:
+
+    "1.000.000"    -> 1000000.0
+    "1.000.000,50" -> 1000000.5
+
+formato_pesos() realiza la conversion inversa para mostrar los valores:
+
+    1000000       -> "1.000.000"
+    1000000.50    -> "1.000.000,50"
+
+El archivo aplicacion.js formatea el campo de precio mientras el usuario
+escribe, limita los decimales a dos y agrega los puntos de miles. La
+validacion definitiva, de todos modos, se realiza en el servidor y en el
+dominio.
+
+
+11. FUNCIONES DEL JAVASCRIPT
+----------------------------
+
+El archivo presentacion/static/aplicacion.js:
+
+- Formatea el precio en vivo.
+- Cierra las alertas de exito automaticamente despues de cinco segundos.
+- Permite cerrar manualmente las alertas.
+- Abre el modal de eliminacion con el nombre, codigo e id del producto.
+- Cambia la accion del formulario de confirmacion al endpoint correcto.
+- Cierra el modal al pulsar Escape.
+- Cierra el modal al hacer clic fuera de su contenido.
+- Filtra instantaneamente las filas visibles por codigo o nombre.
+- Actualiza el contador visible cuando se aplica el filtro instantaneo.
+
+La busqueda enviada mediante el formulario GET tambien se ejecuta en el
+servidor. El filtro instantaneo es una mejora visual adicional para las filas
+que ya fueron cargadas en la pagina.
+
+
+12. PERSISTENCIA Y MAPPER
+-------------------------
+
+Producto es la entidad limpia del dominio. ProductoORM es la representacion
+de esa informacion dentro de SQLAlchemy.
+
+MapperProducto mantiene separadas ambas representaciones:
+
+- a_orm(producto):
+  Convierte Producto en ProductoORM para insertar o persistir.
+
+- a_entidad(orm):
+  Convierte ProductoORM en Producto para devolver un objeto del dominio al
+  servicio.
+
+- actualizar_orm(orm, producto):
+  Copia solamente los campos modificables al registro ORM existente.
+
+El repositorio SQLAlchemy:
+
+- Usa session.add(), commit() y refresh() al guardar.
+- Consulta por id o codigo.
+- Lista ordenado por fecha e id.
+- Actualiza registros existentes y confirma la transaccion.
+- Elimina registros y confirma la transaccion.
+
+
+13. PRUEBAS AUTOMATIZADAS
+-------------------------
+
+Las pruebas se ejecutan desde la raiz con:
+
+    pytest -v
+
+La suite verifica:
+
+- Creacion valida de productos.
+- Codigo vacio y nombre vacio.
+- Precio negativo o invalido.
+- Cantidad negativa o no entera.
+- Actualizacion de una entidad.
+- Parseo y formato de pesos colombianos.
+- Registro mediante POST.
+- Rechazo de codigos duplicados.
+- Casos de uso con repositorio en memoria.
+- Persistencia real usando SQLite en memoria.
+- Conversion entre entidad y modelo ORM.
+- Listado, busqueda, edicion y eliminacion.
+- Respuestas HTTP, redirecciones y mensajes flash de Flask.
+
+La base utilizada por las pruebas no modifica productos.db, porque cada caso
+de persistencia usa sqlite:///:memory: y elimina sus tablas al finalizar.
+
+
+14. DEPENDENCIAS E INSTALACION
+------------------------------
+
+Las dependencias estan declaradas en gestion_productos/requirements.txt:
+
+- Flask >= 3.0.0
+- SQLAlchemy >= 2.0.0
+- pytest >= 8.0.0
+
+En Windows se puede preparar el entorno con:
+
+    cd "C:\Users\Usuario\Documents\universidad\clase 1\gestor-de-productos"
+    python -m venv venv
+    .\venv\Scripts\Activate.ps1
+    pip install -r gestion_productos\requirements.txt
+
+Luego se inicia:
+
+    python run.py
+
+
+15. RESUMEN DEL FLUJO DE UN REGISTRO
+-------------------------------------
+
+Cuando el usuario registra un producto:
+
+1. Abre /productos/nuevo.
+2. Completa el formulario.
+3. El navegador aplica formato visual al precio.
+4. El navegador envia un POST.
+5. Flask lee y limpia los campos.
+6. Flask convierte precio y cantidad.
+7. ServicioProductos verifica que el codigo no exista.
+8. Producto valida sus reglas de negocio.
+9. MapperProducto convierte la entidad a ProductoORM.
+10. SQLAlchemy inserta el registro en la tabla productos.
+11. SQLite guarda los datos en memoria durante la ejecución de la aplicación.
+12. Flask muestra un mensaje de exito y redirige al catalogo.
+13. La plantilla consulta nuevamente los datos y muestra el nuevo producto.
+
+El flujo de editar es equivalente, pero conserva el id y el codigo. El flujo
+de eliminar verifica existencia, borra el registro y vuelve al catalogo.
+
+
+16. CONSIDERACIONES IMPORTANTES
+--------------------------------
+
+- La base SQLite en memoria es la persistencia real del inventario durante la ejecución.
+- No se deben borrar las carpetas de codigo fuente para limpiar datos; para
+  limpiar el inventario se debe eliminar o respaldar especificamente el
+  proceso se detiene, el inventario se reinicia al volver a ejecutar la aplicación.
+- Al iniciar por primera vez se crean las tablas, pero no se crean productos.
+- El codigo es unico y no se puede editar.
+- El precio se guarda como Float, por lo que la aplicacion esta orientada a
+  un proyecto academico y de inventario sencillo, no a contabilidad de alta
+  precision.
+- La clave secreta de Flask tiene un valor predeterminado para desarrollo y
+  puede cambiarse mediante SECRET_KEY.
+- No hay autenticacion de usuarios implementada.
+- No hay categorias, proveedores, usuarios, ventas ni movimientos historicos;
+  el sistema administra unicamente la tabla de productos.
+
+
+FIN DE LA DOCUMENTACION

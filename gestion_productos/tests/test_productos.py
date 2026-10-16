@@ -287,23 +287,9 @@ def test_servicio_eliminar_producto(servicio_con_memoria):
 
 
 def test_servicio_producto_tiene_stock_retorna_booleano(servicio_con_memoria):
-    producto = servicio_con_memoria.registrar_producto(
-        codigo="STOCK-01",
-        nombre="Producto disponible",
-        precio=10.0,
-        cantidad=2,
-    )
-
-    assert servicio_con_memoria.producto_tiene_stock(producto.id) is True
-
-    servicio_con_memoria.actualizar_producto(
-        producto_id=producto.id,
-        nombre=producto.nombre,
-        descripcion=producto.descripcion,
-        precio=producto.precio,
-        cantidad=0,
-    )
-    assert servicio_con_memoria.producto_tiene_stock(producto.id) is False
+    assert servicio_con_memoria.producto_tiene_stock(2) is True
+    assert servicio_con_memoria.producto_tiene_stock(0) is False
+    assert servicio_con_memoria.producto_tiene_stock(-1) is False
 
 
 def test_servicio_validar_stock_no_retorna_y_falla_sin_stock(servicio_con_memoria):
