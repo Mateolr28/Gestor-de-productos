@@ -147,6 +147,7 @@ class ServicioProductos(ServiciosInventario):
             raise ProductoSinStockError(
                 f"El producto con ID {producto_id} no tiene unidades disponibles."
             )
+        return None
 
     def generar_resumen_inventario(self) -> str:
         """

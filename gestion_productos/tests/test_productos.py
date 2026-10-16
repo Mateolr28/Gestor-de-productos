@@ -299,7 +299,8 @@ def test_servicio_validar_stock_no_retorna_y_falla_sin_stock(servicio_con_memori
         precio=10.0,
         cantidad=1,
     )
-    assert servicio_con_memoria.validar_stock_producto(producto_disponible.id) is None
+    resultado = servicio_con_memoria.validar_stock_producto(producto_disponible.id)
+    assert resultado is None
 
     producto_agotado = servicio_con_memoria.registrar_producto(
         codigo="STOCK-03",
