@@ -1,5 +1,6 @@
 import os
 from sqlalchemy import create_engine
+from sqlalchemy.pool import StaticPool
 from sqlalchemy.orm import sessionmaker, scoped_session
 from gestion_productos.infraestructura.modelo_producto import Base
 
@@ -7,19 +8,22 @@ from gestion_productos.infraestructura.modelo_producto import Base
 def obtener_motor(db_url: str = None):
     """
     Crea y retorna la conexión del motor (engine) de SQLAlchemy.
-    Por defecto utiliza una base de datos local SQLite 'productos.db'.
+    Por defecto utiliza una base de datos SQLite en memoria.
+
+    StaticPool mantiene una única conexión para que la base en memoria sea
+    compartida por las sesiones creadas durante la ejecución de la aplicación.
+    La URL o la variable DATABASE_URL permiten sustituirla por otra base.
     """
     if db_url is None:
-        db_path = os.environ.get("DATABASE_PATH", "productos.db")
-        # Asegurar ruta absoluta si es relativa al proyecto
-        if not db_path.startswith("/") and not db_path.startswith("sqlite://"):
-            base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-            db_path = os.path.join(base_dir, "productos.db")
-            db_url = f"sqlite:///{db_path}"
-        elif not db_url:
-            db_url = f"sqlite:///{db_path}"
+        db_url = os.environ.get("DATABASE_URL", "sqlite:///:memory:")
 
-    return create_engine(db_url, connect_args={"check_same_thread": False})
+    engine_options = {}
+    if db_url.startswith("sqlite"):
+        engine_options["connect_args"] = {"check_same_thread": False}
+        if db_url in ("sqlite:///:memory:", "sqlite://"):
+            engine_options["poolclass"] = StaticPool
+
+    return create_engine(db_url, **engine_options)
 
 
 def crear_fabrica_sesiones(engine):

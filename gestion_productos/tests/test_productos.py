@@ -17,6 +17,7 @@ from gestion_productos.dominio.excepciones import (
     ErrorValidacionProducto,
     ProductoNoEncontradoError,
     CodigoProductoDuplicadoError,
+    ProductoSinStockError,
 )
 from gestion_productos.aplicacion.servicio_productos import ServicioProductos
 from gestion_productos.infraestructura.modelo_producto import Base, ProductoORM
@@ -285,6 +286,66 @@ def test_servicio_eliminar_producto(servicio_con_memoria):
     assert servicio_con_memoria.obtener_total_productos() == 0
 
 
+def test_servicio_producto_tiene_stock_retorna_booleano(servicio_con_memoria):
+    producto = servicio_con_memoria.registrar_producto(
+        codigo="STOCK-01",
+        nombre="Producto disponible",
+        precio=10.0,
+        cantidad=2,
+    )
+
+    assert servicio_con_memoria.producto_tiene_stock(producto.id) is True
+
+    servicio_con_memoria.actualizar_producto(
+        producto_id=producto.id,
+        nombre=producto.nombre,
+        descripcion=producto.descripcion,
+        precio=producto.precio,
+        cantidad=0,
+    )
+    assert servicio_con_memoria.producto_tiene_stock(producto.id) is False
+
+
+def test_servicio_validar_stock_no_retorna_y_falla_sin_stock(servicio_con_memoria):
+    producto_disponible = servicio_con_memoria.registrar_producto(
+        codigo="STOCK-02",
+        nombre="Producto disponible",
+        precio=10.0,
+        cantidad=1,
+    )
+    assert servicio_con_memoria.validar_stock_producto(producto_disponible.id) is None
+
+    producto_agotado = servicio_con_memoria.registrar_producto(
+        codigo="STOCK-03",
+        nombre="Producto agotado",
+        precio=10.0,
+        cantidad=0,
+    )
+
+    with pytest.raises(ProductoSinStockError):
+        servicio_con_memoria.validar_stock_producto(producto_agotado.id)
+
+
+def test_servicio_generar_resumen_inventario_sin_parametros(servicio_con_memoria):
+    servicio_con_memoria.registrar_producto(
+        codigo="RES-01",
+        nombre="Producto uno",
+        precio=100.0,
+        cantidad=2,
+    )
+    servicio_con_memoria.registrar_producto(
+        codigo="RES-02",
+        nombre="Producto dos",
+        precio=50.0,
+        cantidad=1,
+    )
+
+    assert servicio_con_memoria.generar_resumen_inventario() == (
+        "Productos registrados: 2 | Unidades en inventario: 3 | "
+        "Valor del inventario: $250.00"
+    )
+
+
 def test_servicio_producto_inexistente_lanza_error(servicio_con_memoria):
     with pytest.raises(ProductoNoEncontradoError):
         servicio_con_memoria.obtener_producto_por_id(9999)
@@ -383,6 +444,25 @@ def test_web_index_y_lista_vacia(app_cliente_web):
     assert response.status_code == 200
     assert b"Gestor de Productos" in response.data
     assert "Aún no hay productos registrados" in response.data.decode("utf-8")
+
+
+def test_web_inventario_muestra_resumen(app_cliente_web):
+    client, servicio = app_cliente_web
+    servicio.registrar_producto(
+        codigo="INV-01",
+        nombre="Producto inventario",
+        precio=25.0,
+        cantidad=4,
+    )
+
+    response = client.get("/inventario")
+
+    assert response.status_code == 200
+    html = response.data.decode("utf-8")
+    assert "Resumen de Inventario" in html
+    assert "Productos registrados: 1" in html
+    assert "Unidades en inventario: 4" in html
+    assert "$100.00" in html
 
 
 def test_web_formulario_nuevo_se_muestra_sin_producto(app_cliente_web):

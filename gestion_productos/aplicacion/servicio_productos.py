@@ -4,10 +4,14 @@ from gestion_productos.dominio.interfaces.repositorio_productos import Repositor
 from gestion_productos.dominio.excepciones import (
     ProductoNoEncontradoError,
     CodigoProductoDuplicadoError,
+    ProductoSinStockError,
+)
+from gestion_productos.aplicacion.interfaces.servicios_inventario import (
+    ServiciosInventario,
 )
 
 
-class ServicioProductos:
+class ServicioProductos(ServiciosInventario):
     """
     Capa de aplicación / Casos de uso.
     Coordina la ejecución de las operaciones de negocio sobre los productos.
@@ -124,3 +128,36 @@ class ServicioProductos:
         # Asegurar que el producto existe
         self.obtener_producto_por_id(producto_id)
         return self.repositorio.eliminar(producto_id)
+
+    def producto_tiene_stock(self, producto_id: int) -> bool:
+        """
+        Caso de uso: comprobar si un producto tiene unidades disponibles.
+        """
+        producto = self.obtener_producto_por_id(producto_id)
+        return producto.cantidad > 0
+
+    def validar_stock_producto(self, producto_id: int) -> None:
+        """
+        Caso de uso: validar que un producto pueda ser utilizado o vendido.
+
+        El contrato no retorna datos; una validación correcta termina
+        normalmente y una inválida comunica el motivo mediante una excepción.
+        """
+        producto = self.obtener_producto_por_id(producto_id)
+        if producto.cantidad <= 0:
+            raise ProductoSinStockError(
+                f"El producto con ID {producto_id} no tiene unidades disponibles."
+            )
+
+    def generar_resumen_inventario(self) -> str:
+        """
+        Caso de uso: generar una salida textual con el estado del inventario.
+        """
+        productos = self.repositorio.listar_todos()
+        unidades = sum(producto.cantidad for producto in productos)
+        valor = sum(producto.precio * producto.cantidad for producto in productos)
+        return (
+            f"Productos registrados: {len(productos)} | "
+            f"Unidades en inventario: {unidades} | "
+            f"Valor del inventario: ${valor:,.2f}"
+        )

@@ -89,6 +89,13 @@ def crear_app(servicio_productos: ServicioProductos = None) -> Flask:
             busqueda=termino_busqueda,
         )
 
+    @app.route("/inventario")
+    def inventario():
+        """Muestra el resumen del inventario generado por la capa de aplicación."""
+        servicio: ServicioProductos = app.servicio_productos
+        resumen = servicio.generar_resumen_inventario()
+        return render_template("inventario.html", resumen=resumen)
+
     @app.route("/productos/nuevo", methods=["GET", "POST"])
     def nuevo_producto():
         """

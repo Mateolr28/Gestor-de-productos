@@ -15,4 +15,8 @@ class ProductoNoEncontradoError(DominioError):
 
 class CodigoProductoDuplicadoError(DominioError):
     """Lanzada cuando se intenta registrar un producto con un código ya existente."""
+
+
+class ProductoSinStockError(DominioError):
+    """Lanzada cuando un producto no tiene unidades disponibles."""
     pass

@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+
+{% block titulo %}Resumen de Inventario &mdash; Gestor de Productos{% endblock %}
+
+{% block contenido %}
+<div class="view-header">
+    <div class="view-titles">
+        <h2 class="page-title">Resumen de Inventario</h2>
+        <p class="page-description">Consulta el estado general del inventario registrado.</p>
+    </div>
+</div>
+
+<div class="toolbar-card">
+    <div>
+        <p class="stats-label">Estado actual</p>
+        <p class="page-description">{{ resumen }}</p>
+    </div>
+    <div class="toolbar-actions">
+        <a href="{{ url_for('index') }}" class="btn btn-secondary">Ver productos</a>
+        <a href="{{ url_for('nuevo_producto') }}" class="btn btn-primary">Nuevo producto</a>
+    </div>
+</div>
+{% endblock %}

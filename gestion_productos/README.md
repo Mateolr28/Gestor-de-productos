@@ -1,6 +1,6 @@
 # Gestor de Productos
 
-Sistema sencillo de gestión de productos desarrollado con **Python**, **Flask**, **SQLAlchemy** y **SQLite**, diseñado bajo una **arquitectura desacoplada** para demostrar de forma limpia y académica los principios de separación de responsabilidades, contratos de interfaz, inversión de dependencias y el patrón Data Mapper.
+Sistema sencillo de gestión de productos desarrollado con **Python**, **Flask**, **SQLAlchemy** y **SQLite en memoria**, diseñado bajo una **arquitectura desacoplada** para demostrar de forma limpia y académica los principios de separación de responsabilidades, contratos de interfaz, inversión de dependencias y el patrón Data Mapper.
 
 ---
 
@@ -38,12 +38,20 @@ La aplicación está organizada en capas con una dirección estricta de dependen
   - Actualización de datos comerciales.
   - Eliminación con validación de existencia.
   - Inyección de dependencias: solo conoce la interfaz abstracta `RepositorioProductos`, desacoplándose del motor de persistencia.
+- **`interfaces/servicios_inventario.py`**: Puerto de entrada que define tres contratos adicionales:
+  - `producto_tiene_stock(producto_id) -> bool`: recibe un parámetro y retorna un booleano.
+  - `validar_stock_producto(producto_id) -> None`: recibe un parámetro y finaliza sin salida cuando es válido; lanza `ProductoSinStockError` cuando no hay unidades.
+  - `generar_resumen_inventario() -> str`: no recibe parámetros y retorna un resumen textual.
+
+Los tres casos de uso se implementan en `ServicioProductos` y reciben el repositorio
+por inyección de dependencias. Por tanto, pueden probarse con un repositorio en
+memoria o conectarse a otra infraestructura sin modificar la lógica de aplicación.
 
 ### 3. Infraestructura (`infraestructura/`)
 - **`modelo_producto.py`**: Modelo relacional `ProductoORM` para SQLAlchemy (`__tablename__ = 'productos'`).
 - **`mapper_producto.py`**: Patrón Data Mapper (`MapperProducto`) para convertir bidireccionalmente entre la entidad pura del dominio `Producto` y el registro de base de datos `ProductoORM`.
 - **`repositorio_productos_sqlalchemy.py`**: Implementación concreta del repositorio utilizando SQLAlchemy y SQLite.
-- **`base_datos.py`**: Conexión a SQLite y fábrica de sesiones seguras.
+- **`base_datos.py`**: Conexión a SQLite en memoria y fábrica de sesiones seguras. Usa `StaticPool` para compartir la misma base durante la ejecución.
 
 ### 4. Presentación (`presentacion/`)
 - **`rutas.py`**: Controlador web Flask. Invoca únicamente los métodos de `ServicioProductos` y renderiza las plantillas Jinja2 con mensajes flash de éxito o error.
@@ -104,7 +112,7 @@ Abre tu navegador en:
 http://localhost:5000
 ```
 
-> **Nota:** La base de datos SQLite (`productos.db`) y sus tablas se crearán automáticamente al iniciar la aplicación. El inventario comienza vacío y se llena únicamente con los productos registrados desde la aplicación.
+> **Nota:** La base de datos SQLite en memoria y sus tablas se crean automáticamente al iniciar la aplicación. El inventario comienza vacío y se pierde al detener el proceso. Se puede sustituir mediante la variable `DATABASE_URL`.
 
 ---
 

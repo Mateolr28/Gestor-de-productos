@@ -4,6 +4,7 @@ from gestion_productos.dominio.excepciones import (
     ErrorValidacionProducto,
     ProductoNoEncontradoError,
     CodigoProductoDuplicadoError,
+    ProductoSinStockError,
 )
 
 __all__ = [
@@ -12,4 +13,5 @@ __all__ = [
     "ErrorValidacionProducto",
     "ProductoNoEncontradoError",
     "CodigoProductoDuplicadoError",
+    "ProductoSinStockError",
 ]
