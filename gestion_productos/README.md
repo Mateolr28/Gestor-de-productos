@@ -26,19 +26,19 @@ La aplicación está organizada en capas con una dirección estricta de dependen
         (Implementa)                  (Define el contrato)
 ```
 
-### 1. Dominio (`dominio/`)
-- **`producto.py`**: Entidad `Producto` pura. Encapsula los atributos comerciales (`codigo`, `nombre`, `precio`, `cantidad`, `descripcion`, `fecha_registro`) y valida sus invariantes (campos obligatorios, precio $\ge 0$, cantidad entera $\ge 0$). **No importa Flask, ni SQLAlchemy, ni SQLite**.
-- **`interfaces/repositorio_productos.py`**: Interfaz abstracta (`ABC`) que establece el contrato formal para operaciones de almacenamiento (`guardar`, `buscar_por_id`, `buscar_por_codigo`, `listar_todos`, `actualizar`, `eliminar`).
+### 1. Entidades (`core/`)
+- **`entidades/producto.py`**: Entidad `Producto` pura. Encapsula los atributos comerciales (`codigo`, `nombre`, `precio`, `cantidad`, `descripcion`, `fecha_registro`) y valida sus invariantes (campos obligatorios, precio $\ge 0$, cantidad entera $\ge 0$). **No importa Flask, ni SQLAlchemy, ni SQLite**.
 - **`excepciones.py`**: Jerarquía de excepciones de negocio (`ErrorValidacionProducto`, `ProductoNoEncontradoError`, `CodigoProductoDuplicadoError`).
 
-### 2. Aplicación (`aplicacion/`)
-- **`servicio_productos.py`**: Clase `ServicioProductos` que orquesta los casos de uso:
+### 2. Casos de uso y puertos (`application/`)
+- **`casos_de_uso/servicio_productos.py`**: Clase `ServicioProductos` que orquesta los casos de uso:
   - Registro de productos verificando unicidad de código.
   - Consulta y búsqueda por nombre o código.
   - Actualización de datos comerciales.
   - Eliminación con validación de existencia.
   - Inyección de dependencias: solo conoce la interfaz abstracta `RepositorioProductos`, desacoplándose del motor de persistencia.
-- **`interfaces/servicios_inventario.py`**: Puerto de entrada que define tres contratos adicionales:
+- **`puertos/salida/repositorio_productos.py`**: Puerto de salida (`ABC`) con el contrato de persistencia (`guardar`, `buscar_por_id`, `buscar_por_codigo`, `listar_todos`, `actualizar`, `eliminar`).
+- **`puertos/entrada/servicios_inventario.py`**: Puerto de entrada que define tres contratos adicionales:
   - `producto_tiene_stock(cantidad) -> bool`: recibe la cantidad y retorna un booleano.
   - `validar_stock_producto(producto_id) -> None`: recibe un parámetro y finaliza sin salida cuando es válido; lanza `ProductoSinStockError` cuando no hay unidades.
   - `generar_resumen_inventario() -> str`: no recibe parámetros y retorna un resumen textual.
@@ -47,13 +47,13 @@ Los tres casos de uso se implementan en `ServicioProductos` y reciben el reposit
 por inyección de dependencias. Por tanto, pueden probarse con un repositorio en
 memoria o conectarse a otra infraestructura sin modificar la lógica de aplicación.
 
-### 3. Infraestructura (`infraestructura/`)
+### 3. Infraestructura (`infrastructure/persistencia/`)
 - **`modelo_producto.py`**: Modelo relacional `ProductoORM` para SQLAlchemy (`__tablename__ = 'productos'`).
 - **`mapper_producto.py`**: Patrón Data Mapper (`MapperProducto`) para convertir bidireccionalmente entre la entidad pura del dominio `Producto` y el registro de base de datos `ProductoORM`.
 - **`repositorio_productos_sqlalchemy.py`**: Implementación concreta del repositorio utilizando SQLAlchemy y SQLite.
 - **`base_datos.py`**: Conexión a SQLite en memoria y fábrica de sesiones seguras. Usa `StaticPool` para compartir la misma base durante la ejecución.
 
-### 4. Presentación (`presentacion/`)
+### 4. Adaptadores de interfaz (`adapters/web/`)
 - **`rutas.py`**: Controlador web Flask. Invoca únicamente los métodos de `ServicioProductos` y renderiza las plantillas Jinja2 con mensajes flash de éxito o error.
 - **`templates/`**:
   - `base.html`: Maquetación común, navegación, alertas y modal de confirmación.
@@ -62,6 +62,8 @@ memoria o conectarse a otra infraestructura sin modificar la lógica de aplicaci
 - **`static/`**:
   - `estilos.css`: Interfaz moderna con la paleta solicitada (azul oscuro, azul medio, blanco, gris claro, verde para éxitos y rojo para errores).
   - `aplicacion.js`: Confirmación modal de eliminación, filtros dinámicos en vivo y cierre automático de notificaciones.
+
+> Se mantienen módulos puente en `dominio/`, `aplicacion/`, `infraestructura/` y `presentacion/` para compatibilidad con imports previos.
 
 ---
 

@@ -14,16 +14,16 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if BASE_DIR not in sys.path:
     sys.path.insert(0, BASE_DIR)
 
-from gestion_productos.infraestructura.base_datos import (
+from gestion_productos.infrastructure.persistencia.base_datos import (
     obtener_motor,
     crear_fabrica_sesiones,
     inicializar_base_datos,
 )
-from gestion_productos.infraestructura.repositorio_productos_sqlalchemy import (
+from gestion_productos.infrastructure.persistencia.repositorio_productos_sqlalchemy import (
     RepositorioProductosSQLAlchemy,
 )
-from gestion_productos.aplicacion.servicio_productos import ServicioProductos
-from gestion_productos.presentacion.rutas import crear_app
+from gestion_productos.application.casos_de_uso.servicio_productos import ServicioProductos
+from gestion_productos.adapters.web.rutas import crear_app
 
 
 def construir_aplicacion(db_url: str = None):

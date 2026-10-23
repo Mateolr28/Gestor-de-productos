@@ -26,26 +26,27 @@ La aplicación está organizada en capas con una dirección estricta de dependen
         (Implementa)                  (Define el contrato)
 ```
 
-### 1. Dominio (`gestion_productos/dominio/`)
-- **`producto.py`**: Entidad `Producto` pura. Encapsula los atributos comerciales (`codigo`, `nombre`, `precio`, `cantidad`, `descripcion`, `fecha_registro`) y valida sus invariantes (campos obligatorios, precio $\ge 0$, cantidad entera $\ge 0$). **No importa Flask, ni SQLAlchemy, ni SQLite**.
-- **`interfaces/repositorio_productos.py`**: Interfaz abstracta (`ABC`) que establece el contrato formal para operaciones de almacenamiento (`guardar`, `buscar_por_id`, `buscar_por_codigo`, `listar_todos`, `actualizar`, `eliminar`).
+### 1. Entidades (`gestion_productos/core/`)
+- **`entidades/producto.py`**: Entidad `Producto` pura. Encapsula los atributos comerciales (`codigo`, `nombre`, `precio`, `cantidad`, `descripcion`, `fecha_registro`) y valida sus invariantes (campos obligatorios, precio $\ge 0$, cantidad entera $\ge 0$). **No importa Flask, ni SQLAlchemy, ni SQLite**.
 - **`excepciones.py`**: Jerarquía de excepciones de negocio (`ErrorValidacionProducto`, `ProductoNoEncontradoError`, `CodigoProductoDuplicadoError`).
 
-### 2. Aplicación (`gestion_productos/aplicacion/`)
-- **`servicio_productos.py`**: Clase `ServicioProductos` que orquesta los casos de uso:
+### 2. Casos de uso y puertos (`gestion_productos/application/`)
+- **`casos_de_uso/servicio_productos.py`**: Clase `ServicioProductos` que orquesta los casos de uso:
   - Registro de productos verificando unicidad de código.
   - Consulta y búsqueda por nombre o código.
   - Actualización de datos comerciales.
   - Eliminación con validación de existencia.
   - Inyección de dependencias: solo conoce la interfaz abstracta `RepositorioProductos`, desacoplándose del motor de persistencia.
+- **`puertos/salida/repositorio_productos.py`**: Contrato abstracto de persistencia.
+- **`puertos/entrada/servicios_inventario.py`**: Contrato de servicios de inventario.
 
-### 3. Infraestructura (`gestion_productos/infraestructura/`)
+### 3. Infraestructura (`gestion_productos/infrastructure/persistencia/`)
 - **`modelo_producto.py`**: Modelo relacional `ProductoORM` para SQLAlchemy (`__tablename__ = 'productos'`).
 - **`mapper_producto.py`**: Patrón Data Mapper (`MapperProducto`) para convertir bidireccionalmente entre la entidad pura del dominio `Producto` y el registro de base de datos `ProductoORM`.
 - **`repositorio_productos_sqlalchemy.py`**: Implementación concreta del repositorio utilizando SQLAlchemy y SQLite.
 - **`base_datos.py`**: Conexión a SQLite y fábrica de sesiones seguras.
 
-### 4. Presentación (`gestion_productos/presentacion/`)
+### 4. Adaptadores de interfaz (`gestion_productos/adapters/web/`)
 - **`rutas.py`**: Controlador web Flask. Invoca únicamente los métodos de `ServicioProductos` y renderiza las plantillas Jinja2 con mensajes flash de éxito o error.
 - **`templates/`**:
   - `base.html`: Maquetación común, navegación, alertas y modal de confirmación.
@@ -54,6 +55,8 @@ La aplicación está organizada en capas con una dirección estricta de dependen
 - **`static/`**:
   - `estilos.css`: Interfaz moderna con la paleta solicitada (azul oscuro, azul medio, blanco, gris claro, verde para éxitos y rojo para errores).
   - `aplicacion.js`: Confirmación modal de eliminación, filtros dinámicos en vivo y cierre automático de notificaciones.
+
+> Se mantienen módulos puente en `dominio/`, `aplicacion/`, `infraestructura/` y `presentacion/` para mantener compatibilidad.
 
 ---
 
